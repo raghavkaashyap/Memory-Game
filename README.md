@@ -1,2 +1,2 @@
 # Memory-Game-SE185
-Repo containing files for the SE 185 final project (Memory Game)
+Repo containing the source code for the SE 185 final project (Memory Game). 
