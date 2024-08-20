@@ -4,9 +4,9 @@ This Memory Game is a console-based application developed using the C programmin
 Gameplay:
 1. Objective: Memorize and correctly input the sequence of shapes displayed on the screen.
 2. Controls:
-    W - Up
-    A - Left
-    S - Down
+    W - Up,
+    A - Left,
+    S - Down,
     D - Right
 
 How to Play:
