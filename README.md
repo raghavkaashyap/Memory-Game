@@ -1,4 +1,4 @@
-Overview
+Overview:
 This Memory Game is a console-based application developed using the C programming language. The game challenges players to remember and replicate sequences of shapes shown on the screen. Each round, a random shape is displayed with a circle around it, and the player must input the correct sequence of shapes using the designated controls.
 
 Gameplay:
