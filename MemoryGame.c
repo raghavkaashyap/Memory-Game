@@ -1,63 +1,56 @@
-//SE 185: Final Project - Memory Game//
-/////////////////////////
+#include<stdio.h>//
 
+#include <stdlib.h>//
 
+#include <unistd.h>//
 
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <time.h> 
-#include <unistd.h> //lets you make second intervals easier
-#include <string.h>
+#include <time.h>//
 
-/////////////////////////////////////
-//User Defined Functions Prototype//
-//List prototypes here and define//
-//tehm below the main function////
-/////////////////////////////////
+#include <string.h>//
 
-void drawShape(int random);
-int printTable();
-void addHighScore();
-int score = 0;
+#define MAX_SCORES 10
+
+typedef struct {
+    int rank;
+    int score;
+    char name[4];
+} Highscore;
+
+void start();
+void drawBoard(int random);
+int printHighscore();
+void countDown();
+void addHighscore(int score);
+
 int main() {
-  char flag = 'f';
-  int play = 1;
-  int numTurns = 1;
+  char check = 'f';
+  int stillPlaying = 1;
+  int score = 0;
+  int turns = 1;
   int arrCount = 0;
-  char userInput = 'i';
+  char input = 'z';
   char * outputs = (char * ) malloc((arrCount + 1) * sizeof(char));
   srand(time(NULL));
 
-  printf("Welcome to the memory game.\n");
-  printf("To start the game enter \"g\" \n");
-  printf("In the game various shapes will appear with a circle around it\n");
-  printf("You must remember the shapes that are circled and repeat the order\n");
-  printf("Use W for up, S for down, D for right, A for left\n\n");
-
-  int lowestScore = printTable();
+  start();
+  int lowestHS = printHighscore();
   //if leaderboard is empty
-  if (lowestScore == -1) {
+  if (lowestHS == -1) {
     printf("\n");
   }
 
   printf("What would you like to do?\n");
-  while (flag != 'g') {
+  while (check != 'g') {
     printf("Enter \"g\" to start: ");
-    scanf(" %c", &flag);
+    scanf(" %c", & check);
   }
 
   //main game loop
-  while (play == 1) {
+  while (stillPlaying == 1) {
     printf("Get ready for the round!\n");
-    int count = 3;
-    //counts down from 3
-    while (count > 0) {
-      printf("%d...\n", count);
-      sleep(1);
-      count--;
-    }
+    countDown();
     int random = rand() % 4;
-    //RK: Choose a random shape and store it in the array
+    //Choose random answer and store it in the array
     switch (random) {
     case 0:
       *
@@ -77,126 +70,111 @@ int main() {
       break;
     }
     //draw the board and circle the random symbol
-    drawShape(random);
+    drawBoard(random);
+    //printf("%c\n", *(outputs + arrCount));
 
     printf("Okay, what was the order? (Use w,a,s,d)\n");
-
     //quiz the player on their knowledge and compare it to the past rounds
-    for (int i = 0; i < numTurns; i++) {
+    for (int i = 0; i < turns; i++) {
       printf("%d time: ", i + 1);
-      scanf(" %c", & userInput);
+      scanf(" %c", & input);
       //check against the previous random chars
-      if (userInput == * (outputs + i)) {
+      if (input == * (outputs + i)) {
         score++;
         printf("Score: %d\n", score);
       } else {
-        play = -1;
-        printf("Sorry, you lose, at least you got to turn %d.\n", numTurns);
+        stillPlaying = -1;
+        printf("Sorry, you lose, at least you got to turn %d.\n", turns);
         printf("Your final score was %d, try again and get an even higher score!\n\n", score);
         break;
       }
     }
     //if they got all of the turns right
-    if (play == 1) {
-      numTurns++;
+    if (stillPlaying == 1) {
+      turns++;
       arrCount++;
     }
   }
-  free(outputs); // memory freed
+  free(outputs);
 
-  //if on the highscore board, update and print it
-  if (score >= lowestScore) {
-    addHighScore();
+  //if they got on the highscore board, update and print it
+  if (score >= lowestHS) {
+    addHighscore(score);
     printf("\n");
-    printTable();
+    printHighscore();
   }
 
   return 0;
 }
 
-///////////////////////////////////////
-//User Defined Functions' Definition//
-/////////////////////////////////////
-
-//prints out the highscore table stored in highscores.txt
-int printTable() {
-  FILE * f = fopen("highscore.txt", "r");
-  //maximum row length for chars is 9, for this method of searching
-  char arr[9][6];
-  int row = 0;
-  int col = 0;
-  char * lowest = (char * ) malloc(2 * sizeof(char));
-
-  if (f == NULL) {
-    printf("Error: Could not find \"highscore.txt\"");
-    exit(0);
+//Prints out the start messages and waits for user input
+void start() {
+  char check = 'f';
+  printf("Welcome to the memory game.\n");
+  while (check != 'g') {
+    printf("Enter \"g\" to start: ");
+    scanf(" %c", & check);
   }
+  printf("In the game various shapes will appear with a circle around it\n");
+  printf("You must remember the shapes that are circled and repeat the order\n");
+  printf("Use W for up, S for down, D for right, A for left\n\n");
+}
 
-  printf("Highscore Table: \nRank Score  Name\n");
-
-  //checks if the file is empty, if so, return -1
-  fseek(f, 0, SEEK_END);
-  if (ftell(f) == 0) {
-    return -1;
-  }
-
-  rewind(f);
-  //reads the file and stores its input in a 2d char array
-  while (!feof(f)) {
-    char current;
-    //add current char to array
-    fscanf(f, "%c ", & current);
-    //if the column reached the end reset and increment row
-    if (col == 5) {
-      arr[row][col] = current;
-      row++;
-      col = 0;
-    } else {
-      arr[row][col] = current;
-      col++;
+//prints out the highscore table stored in highscores.txt,
+//with proper spacing
+int printHighscore() {
+    FILE *f = fopen("highscores.txt", "r");
+    if (f == NULL) {
+        printf("Error: Could not open \"highscores.txt\"\n");
+        return -1;
     }
-  }
-  fclose(f);
 
-  //traverses the 2d array and prints out the highscores with proper spacing
-  for (int r = 0; r < row; r++) {
-    for (int c = 0; c < 6; c++) {
-      switch (c) {
-      case 0:
-        printf("%c     ", arr[r][c]);
-        break;
-      case 1:
-      case 3:
-      case 4:
-      case 5:
-        printf("%c ", arr[r][c]);
-        break;
-      case 2:
-        printf("%c   ", arr[r][c]);
-        break;
-      default:
-        printf("%c ", arr[r][c]);
-      }
+    char line[20]; 
+    int lowestScore = 100;
+    int count = 0;
+
+    printf("Highscore Table:\nRank  Score  Name\n");
+
+    while (fgets(line, sizeof(line), f) != NULL) {
+        int rank, score;
+        char name[4];
+
+        if (sscanf(line, "%d %d %s", &rank, &score, name) == 3) {
+            printf("%d     %d     %s\n", rank, score, name);
+            
+            if (score < lowestScore) {
+                lowestScore = score;
+            }
+            count++;
+        }
     }
-    printf("\n");
-  }
 
-  //gets the lowest score on the leaderboard and returns it as an int
-  *(lowest) = arr[row][1];
-  *(lowest + 1) = arr[row][2];
-  return atoi(lowest);
+    fclose(f);
+    return (count > 0) ? lowestScore : -1;
+}
+
+
+//counts down from 3
+void countDown() {
+  int count = 3;
+  while (count > 0) {
+    printf("%d...\n", count);
+    sleep(1);
+    count--;
+  }
 }
 
 //draws out the 4 symbols,
 //circling one of them based on the given random
-void drawShape(int random) {
+void drawBoard(int random) {
 
   if (random == 0) {
     printf(" - - - - - -\n");
+
   }
     
   //drawing triangle
-  int mySpace = 20;
+  int spaceOut = 20;
   int rowLength = 4;
   for (int i = 1; i <= rowLength; i++) {
     if (random == 0) {
@@ -208,7 +186,7 @@ void drawShape(int random) {
 
     }
 
-    if (i > 0)
+    if (i > 0) //spacing for the triangle, keeps it away from the edge of the screen.
     {
       printf(" ");
       printf(" ");
@@ -254,18 +232,18 @@ void drawShape(int random) {
 
   for (int l = 1; l < rLength; l++) {
     for (int h = 1; h <= hLength; h++) {
-      if (h == 1)
+      if (h == 1) //spacing for the top line of the square.
       {
           if (random == 1){
-            printf("|");
-            }
-          if (l > 0){
-            printf(" ");
-          }
+                       printf("|");
+                   }
+          if (l > 0) {
+                  printf(" ");
+                }
         printf(" ");
           
       }
-      printf("H");
+      printf("@");
       if (h == 5) {
         printf(" ");
       }
@@ -282,7 +260,7 @@ void drawShape(int random) {
     }
 
     for (int m = 1; m <= (2 * k - 1); m++) {
-      printf("0");
+      printf("^");
       if (m >= (2 * k - 1)) {
           if (random == 3 && m == 1){
               printf("    |");
@@ -295,15 +273,15 @@ void drawShape(int random) {
           }
         printf("\n");
         for (int h = 1; h <= hLength; h++) {
-          if (h == 1)
+          if (h == 1) //this is spacing before the shape is printed. For the 3 middle parts of the sqare
           {
               if (random == 1){
-                printf("|");
-              }
-              printf(" ");
-              printf(" ");
+                           printf("|");
+                       }
+            printf(" ");
+            printf(" ");
           }
-          printf("H");
+          printf("@");
           if (h == 5) {
             printf(" ");
           }
@@ -318,11 +296,12 @@ void drawShape(int random) {
   }
 
   for (int l = 2; l >= rowL; l--) {
+
     for (int h = l; h <= heightL; h++) {
       printf(" ");
     }
     for (int h = 3; h <= (2 * l + 1); h++) {
-      printf("0");
+      printf("^");
       if (h > (4)) {
           if (random == 3){
               printf("   |");
@@ -336,7 +315,7 @@ void drawShape(int random) {
             printf(" ");
             printf(" ");
           }
-          printf("H");
+          printf("@");
           if (h >= 5) {
             printf(" ");
               if (random == 1 || random == 3){
@@ -347,7 +326,7 @@ void drawShape(int random) {
       }
       }
       if (random == 3 && l == 0){
-        printf("|");
+                 printf("|");
         }
     }
   printf(" \n");
@@ -373,13 +352,13 @@ void drawShape(int random) {
       printf("|");
     }
     for (r = 1; r <= size; r++) {
-      if (r == 1)
+      if (r == 1) //spacing for the x, to keep away from edge of screen.
       {
         printf(" ");
         printf(" ");
       }
       if (r == t || (r == size - t + 1)) {
-        printf("X");
+        printf("*");
       } else {
         printf(" ");
       }
@@ -395,122 +374,60 @@ void drawShape(int random) {
    
   }
     
-  if (random == 2)
+  if (random == 2) {
     printf(" - - - - -\n");
+  }
+
 }
 
 //takes the players score and name
 //then inserts it into the correct position and
 //moves the rest of the leaderboard into its new order
-void addHighScore() {
-  //max score is 99
-  if (score > 99) {
-    score = 99;
-  }
-  
-  FILE * f = fopen("highscore.txt", "r");
-  char arr[9][6];
-  char name[3];
-  int row = 0;
-  int col = 0;
-  char * currentValue = (char * ) malloc(2 * sizeof(char));
-  int replacementRow = 0;
 
-  //checks if the file is empty, if so, set replacementRow to 0
-  fseek(f, 0, SEEK_END);
-  if (ftell(f) == 0) {
-    replacementRow = 0;
-  }
-  rewind(f);
+void addHighscore(int score) {
+    Highscore scores[MAX_SCORES];
+    int count = 0;
 
-  //scan current highscore table into 2d char array
-  while (!feof(f)) {
-    char current;
-    //add current char to array
-    fscanf(f, "%c ", & current);
-    //if the column reached the end reset and increment row
-    if (col == 5) {
-      arr[row][col] = current;
-      row++;
-      col = 0;
-    } else {
-      arr[row][col] = current;
-      col++;
-    }
-  }
-  fclose(f);
-
-  //find row to put new highscore in
-  //by comparing this players score vs the leaderboards
-  for (int r = 0; r < row; r++) {
-    *(currentValue) = arr[r][1];
-    *(currentValue + 1) = arr[r][2];
-    *(currentValue + 2) = '\0';
-    if (score >= atoi(currentValue)) {
-      replacementRow = r;
-      printf("Congratulations, you made it on the highscore table!\n"); 
-      printf("Please enter your name (only 3 capital letters): "); 
-      scanf("%s", name);
-      break;
-    }
-  }
-
-  char newArr[9][6];
-
-  // RK: moves the lowest score to the bottom of the highscore table
-  if (replacementRow != 0) { 
-    for (int r = 0; r < row; r++) {
-      if (r == replacementRow) {
-        newArr[replacementRow][0] = '0' + (replacementRow + 1);
-        newArr[replacementRow][1] = '0' + (score / 10) % 10;
-        newArr[replacementRow][2] = '0' + score % 10;
-        newArr[replacementRow][3] = name[0];
-        newArr[replacementRow][4] = name[1];
-        newArr[replacementRow][5] = name[2];
-      }
-      for (int c = 0; c < 6; c++) { 
-        if (r < replacementRow) {
-          newArr[r][c] = arr[r][c];
-        } else if (r > replacementRow) {
-          if (c == 0) {
-            int orig = arr[r - 1][c] - '0';
-            orig++;
-            newArr[r][c] = orig + '0';
-          } else {
-            newArr[r][c] = arr[r - 1][c];
-          }
+    FILE *f = fopen("highscores.txt", "r");
+    
+    if (f != NULL) {
+        while (fscanf(f, "%d %d %s", &scores[count].rank, &scores[count].score, scores[count].name) == 3) {
+            count++;
+            if (count >= MAX_SCORES) break;
         }
-      }
+        fclose(f);
     }
-  } else {
-    newArr[replacementRow][0] = '0' + (replacementRow + 1);
-    newArr[replacementRow][1] = '0' + (score / 10) % 10;
-    newArr[replacementRow][2] = '0' + score % 10;
-    newArr[replacementRow][3] = name[0];
-    newArr[replacementRow][4] = name[1];
-    newArr[replacementRow][5] = name[2];
-    for (int r = 1; r <= row; r++) {
-      for (int c = 0; c < 6; c++) {
-        if (c == 0) {
-          int orig = arr[r - 1][c] - '0';
-          orig++;
-          newArr[r][c] = orig + '0';
-        } else {
-          newArr[r][c] = arr[r - 1][c];
-        }
-      }
-    }
-  }
 
-  //AT: rewrites new leaderboard to the text file highscore.txt
-  f = fopen("highscore.txt", "w");
-  for (int r = 0; r < row; r++) {
-    for (int c = 0; c < 6; c++) {
-      fprintf(f, "%c ", newArr[r][c]);
+    char name[4];
+    printf("Enter your name (3 letters): ");
+    scanf("%3s", name);
+
+    int insertPos = count;
+    for (int i = 0; i < count; i++) {
+        if (score >= scores[i].score) {
+            insertPos = i;
+            break;
+        }
     }
-    if (row > 1) {
-      fprintf(f, "\n");
+    for (int i = MAX_SCORES - 1; i > insertPos; i--) {
+        scores[i] = scores[i - 1];
     }
-  }
-  fclose(f);
+
+    // Insert the new score
+    scores[insertPos].rank = insertPos + 1;
+    scores[insertPos].score = score;
+    strcpy(scores[insertPos].name, name);
+
+    for (int i = 0; i < MAX_SCORES && i < count + 1; i++) {
+        scores[i].rank = i + 1;
+    }
+
+    // Write scores back to the file
+    f = fopen("highscores.txt", "w");
+    for (int i = 0; i < MAX_SCORES && i < count + 1; i++) {
+        fprintf(f, "%d %d %s\n", scores[i].rank, scores[i].score, scores[i].name);
+    }
+    fclose(f);
+
+    printf("Highscore saved successfully!\n");
 }
