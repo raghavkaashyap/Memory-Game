@@ -1,12 +1,14 @@
-#include<stdio.h>//
+#include<stdio.h>
 
-#include <stdlib.h>//
+#include <stdlib.h>
 
-#include <unistd.h>//
+#include <unistd.h>
 
-#include <time.h>//
+#include <time.h>
 
-#include <string.h>//
+#include <string.h> 
+
+#include <limits.h> // For INT_MAX
 
 #define MAX_SCORES 10
 
@@ -33,7 +35,8 @@ int main() {
   srand(time(NULL));
 
   start();
-  int lowestHS = printHighscore();
+  int count, lowestHS;
+  lowestHS = printHighscore(&count);
   //if leaderboard is empty
   if (lowestHS == -1) {
     printf("\n");
@@ -98,10 +101,10 @@ int main() {
   free(outputs);
 
   //if they got on the highscore board, update and print it
-  if (score >= lowestHS) {
+  if (count < MAX_SCORES || score >= lowestHS) {
     addHighscore(score);
     printf("\n");
-    printHighscore();
+    printHighscore(&count);
   }
 
   return 0;
@@ -121,36 +124,27 @@ void start() {
 }
 
 //prints out the highscore table stored in highscores.txt,
-//with proper spacing
-int printHighscore() {
-    FILE *f = fopen("highscores.txt", "r");
-    if (f == NULL) {
-        printf("Error: Could not open \"highscores.txt\"\n");
-        return -1;
-    }
+int printHighscore(int *outCount) {
+  FILE *f = fopen("highscores.txt", "r");
+  if (!f) return -1;
 
-    char line[20]; 
-    int lowestScore = 100;
-    int count = 0;
+  char line[32];
+  int lowestScore = INT_MAX;
+  int count = 0;
 
-    printf("Highscore Table:\nRank  Score  Name\n");
+  printf("Highscore Table:\nRank  Score  Name\n");
+  while (fgets(line, sizeof(line), f)) {
+      int rank, score; char name[4];
+      if (sscanf(line, "%d %d %3s", &rank, &score, name) == 3) {
+          printf("%d     %d     %s\n", rank, score, name);
+          if (score < lowestScore) lowestScore = score;
+          count++;
+      }
+  }
+  fclose(f);
 
-    while (fgets(line, sizeof(line), f) != NULL) {
-        int rank, score;
-        char name[4];
-
-        if (sscanf(line, "%d %d %s", &rank, &score, name) == 3) {
-            printf("%d     %d     %s\n", rank, score, name);
-            
-            if (score < lowestScore) {
-                lowestScore = score;
-            }
-            count++;
-        }
-    }
-
-    fclose(f);
-    return (count > 0) ? lowestScore : -1;
+  *outCount = count;
+  return (count > 0) ? lowestScore : -1;
 }
 
 
